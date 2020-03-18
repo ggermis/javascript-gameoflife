@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" type="text/css" href="conway.css">
+		<script src="https://d3js.org/d3.v5.min.js"></script>
+		<script src="conway.js"></script>
+	</head>
+
+	<body>
+		<h2>Conway's Game of Life</h2>
+		<h5>Generation <span id="generation">0</span> [tracking <span id="track">0</span> cells]</h5>
+
+		<a class="button1" onclick="game.seed()">reseed</a>
+		<a class="button1" onclick="game.toggleResume()">pause / resume</a>
+		<a class="button1" onclick="game.tick()">step</a>
+		<a class="button1" onclick="game.toggleMark()">togge markers</a>
+
+		<svg></svg>
+		<script>
+			const game = new Game(140, 70);
+			game.start();
+		</script>
+	</body>
+</html>
