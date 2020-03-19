@@ -2,6 +2,10 @@ const CELL_WIDTH   = 8
 const CELL_HEIGHT  = 8
 const CELL_PADDING = 0.9
 
+// ---
+//  Helper
+// ---
+
 const RecurringTimer = function(callback, delay) {
     var timerId, start, remaining = delay;
 
@@ -23,131 +27,172 @@ const RecurringTimer = function(callback, delay) {
 }
 
 
+// ---
+//  Game code
+// ---
+
 class Game {
 	constructor(width, height) {
-		this.grid = new Grid(width, height);
-		this.grid.refresh();
-		this.generation = 0;
-
-		this.isResuming = false;
-		this.isShowing = false;
+		grid.initializeGrid(width, height);
+		this.reset();
 	}
 
-	randomizeLivingCells() {
-		for (let i = 0; i<this.grid.cols; i++) {
-			for (let j = 0; j<this.grid.rows; j++) {
-				parseInt(Math.random() * 100) % 3 == 0 ? this.grid.markAlive(i, j) : this.grid.markDead(i, j);
+	randomizeCellStates() {
+		for (let i = 0; i<grid.cols; i++) {
+			for (let j = 0; j<grid.rows; j++) {
+				parseInt(Math.random() * 100) % 5 == 0 ? grid.markAlive(i, j) : grid.markDead(i, j);
 			}
 		}
 	}
 
+	updateTitle() {
+		document.getElementById('track').innerText = grid.track.size;
+		document.getElementById('generation').innerText = this.generation;		
+	}
+
 	start() {
-		this.randomizeLivingCells();
 		this.timer = new RecurringTimer(() => {
 			this.tick();
-		}, 50)
+		}, 50);
+	}
+
+	stop() {
+		if (this.timer) {
+			this.timer.pause();
+		}
+		this.isResuming = false;
 	}
 
 	tick() {
-		this.grid.tick();
-		document.getElementById('track').innerText = this.grid.track.size;
-		document.getElementById('generation').innerText = ++this.generation;
-		this.isShowing = false;
+		grid.tick();
+		this.generation++;
+		this.updateTitle();
+	}
+
+	reset() {
+		this.stop();
+		grid.clear();
+		this.generation = 0;
+		this.showIntermediateState = false;		
+		this.updateTitle();
+		this.randomizeCellStates();
 	}
 
 	toggleResume() {
+		this.showIntermediateState = false;
 		this.isResuming ? this.timer.pause() : this.timer.resume();
-		this.isResuming = !this.isResuming
-		this.isShowing = false;
+		this.isResuming = !this.isResuming;
 	}
 
-	toggleMark() {
-		this.isShowing ?  this.grid.refresh() : this.grid.applyRules();
-		this.isShowing = !this.isShowing;
+	toggleInspect() {
+		this.stop();
+		this.showIntermediateState ?  grid.refresh() : grid.applyRules();
+		this.showIntermediateState = !this.showIntermediateState;
+	}
+
+	step() {
+		this.stop();
+		this.tick();
+		this.showIntermediateState = false;
 	}
 
 	seed() {
-		this.generation = 0;
-		this.grid.track.clear();
-		document.getElementById('track').innerText = this.grid.track.size;
-		document.getElementById('generation').innerText = this.generation;
-		this.randomizeLivingCells();
+		this.reset();
 	}
 }
 
 
 class Grid {
-	constructor(cols, rows) {
+	initializeGrid(cols, rows) {
 		this.cols = cols;
 		this.rows = rows;
-		this.track = new Set();
-		this.grid = new Array(this.cols)
+		this.track = new Set(); // only track relevant cells
+		this.cells = new Array(this.cols);
 		for (let i = 0; i < this.cols; i++) {
-			this.grid[i] = new Array(this.rows);
+			this.cells[i] = new Array(this.rows);
 			for (let j = 0; j < this.rows; j++) {
-				let cell = new Cell(this, i, j);
-				this.grid[i][j] = cell;
-				this.track.add(cell);
+				this.cells[i][j] = this.addToTracking(new Cell(i, j));
 			}
 		}
-		new Graphics(this).draw();
+		graphics.drawGrid();
+		this.refresh();		
 	}
 
 	tick() {
 		this.applyRules();
 		this.transition();
+		this.refresh();
 	}
 
 	applyRules() {
-		this.track.forEach(living => {
-			living.applyRules();
+		this.track.forEach(cell => {
+			cell.applyRules();
 		});
 	}
 
 	transition() {
-		this.track.forEach(next => {
-			next.transition();
+		this.track.forEach(cell => {
+			cell.transition();
 		});
-		this.refresh();
 	}	
 
 	refresh() {
 		this.track.forEach(cell => {
-			cell.visualize()
+			cell.visualize();
 			if ((!cell.alive) && cell.neighbours.size < 3) {
 				this.track.delete(cell);
 			}
 		})
 	}
 
-	get(x, y) {
-		return this.grid[x][y];
-	}
-
 	addToTracking(cell) {
 		this.track.add(cell);
+		return cell;
 	}
 
 	markAlive(x, y) {
-		this.track.add(this.grid[x][y].markAlive().visualize());
+		this.addToTracking(this.cells[x][y].markAlive());
 	}
 
 	markDead(x, y) {
-		this.track.add(this.grid[x][y].markDead().visualize());
+		this.addToTracking(this.cells[x][y].markDead());
 	}
 
 	toggleAlive(x, y) {
-		let cell = this.grid[x][y]
-		cell.toggleAlive().visualize();
-		return cell;
+		return this.cells[x][y].toggleAlive();
+	}
+
+	clear() {
+		this.track.clear();
+	}
+
+	withAllNeighbours(cell, cb) {
+		for (let i = -1; i <= 1; i++) {
+			for (let j = -1; j <= 1; j++) {
+				let x = this.wrap(cell.x + i, this.cols);
+				let y = this.wrap(cell.y + j, this.rows);
+				let neighbour = this.cells[x][y];
+				if (cell != neighbour) {
+					this.addToTracking(neighbour);
+					cb(neighbour);
+				}
+			}
+		}
+	}
+
+	wrap(n, max) {
+		if (n < 0) {
+			n = max - 1;
+		} else if (n > max - 1) {
+			n = 0
+		}
+		return n;
 	}
 }
 
 
 class Cell {
-	constructor(grid, x, y) {
-		this.grid = grid;
-		this.id = `cell-${x}-${y}`
+	constructor(x, y) {
 		this.x = x;
 		this.y = y;
 		this.alive = false;
@@ -159,12 +204,12 @@ class Cell {
 	applyRules() {
 		if (this.alive) {
 			if (this.neighbours.size < 2 || this.neighbours.size > 3) {
-				d3.select(`#${this.id}`).attr('class', `cell killing`)
+				graphics.markCell(this, 'killing');
 				this.killing = true;
 			}
 		} else {
 			if (this.neighbours.size == 3) {
-				d3.select(`#${this.id}`).attr('class', `cell reviving`)
+				graphics.markCell(this, 'reviving');
 				this.reviving = true;
 			}
 		}
@@ -178,91 +223,76 @@ class Cell {
 			this.alive = false;
 			this.killing = false;				
 		}
-		this.updateNeighbours();
+		this.notifyNeighbours();
 	}
 
-	updateNeighbours() {
-		for (let i = -1; i <= 1; i++) {
-			for (let j = -1; j <= 1; j++) {
-				let x = this.wrapX(this.x + i);
-				let y = this.wrapY(this.y + j);
-				let neighbour = this.grid.get(x, y);
-				this.grid.addToTracking(neighbour);
-				if (neighbour != this) {
-					if (this.alive) {
-						neighbour.neighbours.add(this);
-					} else {
-						neighbour.neighbours.delete(this);
-					}
-				}
+	notifyNeighbours() {
+		grid.withAllNeighbours(this, (neighbour) => {
+			if (this.alive) {
+				neighbour.neighbours.add(this);
+			} else {
+				neighbour.neighbours.delete(this);
 			}
-		}
+		})
 	}
 
-	wrapX(x) {
-		if (x < 0) {
-			x = this.grid.cols - 1;
-		} else if (x > this.grid.cols - 1) {
-			x = 0;
-		}
-		return x;
-	}
 
-	wrapY(y) {
-		if (y < 0) {
-			y = this.grid.rows - 1;
-		} else if (y > this.grid.rows - 1) {
-			y = 0;
-		}
-		return y;
+	setAlive(state) {
+		this.alive = state;
+		this.notifyNeighbours();
+		this.visualize();
+		return this;		
 	}
 
 	markAlive() {
-		this.alive = true;
-		this.updateNeighbours();
-		return this;
+		return this.setAlive(true);
 	}
 
 	markDead() {
-		this.alive = false;
-		this.updateNeighbours();
-		return this;
+		return this.setAlive(false);
 	}
 
 	toggleAlive() {
-		this.alive = !this.alive;
-		this.updateNeighbours();
-		return this;
+		return this.setAlive(!this.alive);
 	}
 
 	visualize() {
-		d3.select(`#${this.id}`).attr('class', `cell ${this.alive ? 'alive' : 'dead'}`)
+		graphics.markCell(this, this.alive ? 'alive' : 'dead');
 		return this;
 	}
 }
 
 
+// ---
+//  Graphical representation
+// ---
+
 class Graphics {
-	constructor(grid) {
-		this.grid = grid
+	reset() {
 		this.svg = d3.select("svg")
-			.attr("width", `${this.grid.cols * (CELL_WIDTH + CELL_PADDING * 2)}`)
-			.attr("height", `${this.grid.rows * (CELL_HEIGHT + CELL_PADDING * 2)}`);
+			.attr("width", `${grid.cols * (CELL_WIDTH + CELL_PADDING * 2)}`)
+			.attr("height", `${grid.rows * (CELL_HEIGHT + CELL_PADDING * 2)}`);
+		this.svg.selectAll("rect").remove();
 	}
 
+	cellId(cell) {
+		return `cell-${cell.x}-${cell.y}`
+	}
 
-	draw() {
-		for (let i = 0; i < this.grid.cols; i++) {
-			for (let j = 0; j < this.grid.rows; j++) {
-				this.drawCell(this.grid.grid[i][j]);
+	drawGrid() {
+		this.reset();
+		for (let i = 0; i < grid.cols; i++) {
+			for (let j = 0; j < grid.rows; j++) {
+				this.drawCell(grid.cells[i][j]);
 			}
-		}		
+		}
+		return this;	
 	}
 
 	drawCell(cell) {
 		let clazz = this;
 		const rect = this.svg.append("rect")
-			.attr("id", cell.id)
+			.attr("id", this.cellId(cell))
 			.attr("x", cell.x * (CELL_WIDTH + CELL_PADDING * 2) + 1)
 			.attr("y", cell.y * (CELL_HEIGHT + CELL_PADDING * 2)  + 1)
 			.attr("width", CELL_WIDTH)
@@ -270,6 +300,15 @@ class Graphics {
 			.attr("class", `cell ${this.alive ? 'alive' : 'dead'}`)
 			.classed("alive", cell.alive)
 			.text("&nbsp;");
-		rect.on("click", () => rect.classed("alive", clazz.grid.toggleAlive(cell.x, cell.y).alive) )
+		rect.on("click", () => rect.classed("alive", grid.toggleAlive(cell.x, cell.y).alive) )
+		return cell;
+	}
+
+	markCell(cell, name) {
+		d3.select(`#${this.cellId(cell)}`).attr('class', `cell ${name}`)
+		return cell;
 	}
 }
+
+const graphics = new Graphics();
+const grid = new Grid();

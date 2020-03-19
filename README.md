@@ -2,6 +2,17 @@
 
 Reference: https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
 
+## Demo
+
+You can find a working example [here](http://game-of-life.codenut.org)
+
+## Implementation
+
+* Uses `SVG` as the canvas (manipulated through [d3](https://d3js.org/))
+* Randomizes the initial state
+* Ability to step through each tick manually
+* Ability to show cells which would be `killed` or `revived` in the next tick
+* The grid automatically resizes to the viewpane
 
 ## Features
 
@@ -18,7 +29,7 @@ using too much CPU
 
 Manually perform a single step
 
-> Toggle markers
+> Toggle inspector
 
 Show what would happen on the next step. `red` cells mean the existing `alive` cells will `die`. While `green` cells mean that a previously `dead` cell wil be `revived`
 

@@ -1,3 +1,16 @@
+* {
+     user-select: none;
+    -khtml-user-select: none;
+    -o-user-select: none;
+    -moz-user-select: -moz-none;
+    -webkit-user-select: none;
+}
+
+
+h2, h5, a {
+	text-transform: uppercase;
+}
+
 h2 {
 	padding: 0;
 	margin: 0;
@@ -15,8 +28,7 @@ svg {
 }
 
 .cell {
-	stroke-opacity: 0.3;
-	fill-opacity: 0.7;
+	stroke-opacity: 0.2;
 	stroke: black;
 }
 
@@ -48,14 +60,14 @@ body {
 }
 
 a.button1 {
-	display:inline-block;
-	padding:0.35em 1.2em;
-	border:0.1em solid #FFFFFF;
-	margin:0 0.3em 0.7em 0;
-	border-radius:0.12em;
+	display: inline-block;
+	padding: 0.35em 1.2em;
+	border: 0.1em solid #FFFFFF;
+	margin: 0 0.3em 1em 0;
+	border-radius: 1em;
 	box-sizing: border-box;
 	text-decoration:none;
-	font-family:'Roboto',sans-serif;
+	/*font-family:'Roboto',sans-serif;*/
 	font-weight:300;
 	color: white;
 	background-color: black;

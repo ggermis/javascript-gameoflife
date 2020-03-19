@@ -9,17 +9,37 @@
 
 	<body>
 		<h2>Conway's Game of Life</h2>
-		<h5>Generation <span id="generation">0</span> [tracking <span id="track">0</span> cells]</h5>
+		<h5>Generation: <span id="generation">0</span><br/>Tracked cells: <span id="track">0</span></h5>
 
 		<a class="button1" onclick="game.seed()">reseed</a>
 		<a class="button1" onclick="game.toggleResume()">pause / resume</a>
-		<a class="button1" onclick="game.tick()">step</a>
-		<a class="button1" onclick="game.toggleMark()">togge markers</a>
+		<a class="button1" onclick="game.step()">step</a>
+		<a class="button1" onclick="game.toggleInspect()">inspect</a>
 
-		<svg></svg>
+		<div id="container">
+			<svg id="svg"></svg>
+		</div>
+
 		<script>
-			const game = new Game(140, 70);
-			game.start();
+			let game;
+
+			function restartGame() {
+				let container = document.getElementById("container");
+				let rows = parseInt((window.innerHeight - container.offsetTop)/(CELL_HEIGHT+CELL_PADDING*2));
+				let cols = parseInt(window.innerWidth / (CELL_WIDTH+CELL_PADDING*2));	
+				container.style.height = '1px';
+				if (game) {
+					game.reset();
+				}
+				game = new Game(cols - 5, rows - 2);
+				game.start();
+			}
+
+			d3.select(window).on('resize', () => {
+				restartGame();
+			});
+
+			restartGame();
 		</script>
 	</body>
 </html>
