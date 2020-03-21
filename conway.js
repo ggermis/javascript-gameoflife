@@ -33,6 +33,7 @@ const RecurringTimer = function(callback, delay) {
 
 class Game {
 	constructor(width, height) {
+		this.startBtn = document.getElementById("start");
 		grid.initializeGrid(width, height);
 		this.reset();
 	}
@@ -43,6 +44,7 @@ class Game {
 				parseInt(Math.random() * 100) % 5 == 0 ? grid.markAlive(i, j) : grid.markDead(i, j);
 			}
 		}
+		this.updateTitle();
 	}
 
 	updateTitle() {
@@ -61,6 +63,15 @@ class Game {
 			this.timer.pause();
 		}
 		this.isResuming = false;
+		startBtn.innerText = 'start';
+	}
+
+	resume() {
+		if (this.timer) {
+			this.timer.resume();
+		}
+		this.isResuming = true;
+		startBtn.innerText = 'stop';
 	}
 
 	tick() {
@@ -80,8 +91,7 @@ class Game {
 
 	toggleResume() {
 		this.showIntermediateState = false;
-		this.isResuming ? this.timer.pause() : this.timer.resume();
-		this.isResuming = !this.isResuming;
+		this.isResuming ? this.stop() : this.resume();
 	}
 
 	toggleInspect() {
@@ -118,7 +128,7 @@ class Grid {
 		this.refresh();		
 	}
 
-	tick() {
+	tick(showSteps) {
 		this.applyRules();
 		this.transition();
 		this.refresh();

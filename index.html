@@ -11,8 +11,8 @@
 		<h2>Conway's Game of Life</h2>
 		<h5>Generation: <span id="generation">0</span><br/>Tracked cells: <span id="track">0</span></h5>
 
-		<a class="button1" onclick="game.seed()">reseed</a>
-		<a class="button1" onclick="game.toggleResume()">pause / resume</a>
+		<a class="button1" onclick="game.seed()">seed</a>
+		<a id="start" class="button1" onclick="game.toggleResume()">start</a>
 		<a class="button1" onclick="game.step()">step</a>
 		<a class="button1" onclick="game.toggleInspect()">inspect</a>
 
@@ -22,6 +22,8 @@
 
 		<script>
 			let game;
+
+			let startBtn = document.getElementById('start');
 
 			function restartGame() {
 				let container = document.getElementById("container");
