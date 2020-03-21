@@ -121,7 +121,6 @@ class Game {
 			this.mode = Game.MODE_SINGLE;
 			this.stop();
 			this.interval = Game.INTERVAL_NORMAL;
-			this.resume();
 		}
 		el.classList.toggle('active');
 	}
