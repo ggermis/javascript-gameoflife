@@ -71,12 +71,14 @@ class Game {
 			this.timer.pause();
 		}
 		this.isResuming = false;
+		this.startBtn.classList.remove('active');
 		this.startBtn.innerText = 'start';
 	}
 
 	resume() {
 		this.timer.resume(this.interval);
 		this.isResuming = true;
+		this.startBtn.classList.add('active');
 		this.startBtn.innerText = 'stop';
 	}
 
@@ -95,6 +97,7 @@ class Game {
 		this.mode = Game.MODE_SINGLE;
 		this.generation = 0;
 		this.showIntermediateState = false;
+		this.startBtn.classList.remove('active');
 		this.debugBtn.classList.remove('active');
 		this.updateTitle();
 		this.randomizeCellStates();
