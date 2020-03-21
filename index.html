@@ -13,6 +13,7 @@
 
 		<a class="button1" onclick="game.seed()">seed</a>
 		<a id="start" class="button1" onclick="game.toggleResume()">start</a>
+		<a id="debug" class="button1" onclick="game.toggleDebugMode(this)">debug</a>
 		<a class="button1" onclick="game.step()">step</a>
 		<a class="button1" onclick="game.toggleInspect()">inspect</a>
 
@@ -34,7 +35,7 @@
 					game.reset();
 				}
 				game = new Game(cols - 5, rows - 2);
-				game.start();
+				game.start(Game.INTERVAL);
 			}
 
 			d3.select(window).on('resize', () => {

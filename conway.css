@@ -84,3 +84,7 @@ a.button1:hover{
 		margin:0.4em auto;
 	}
 }
+
+a.active {
+	opacity: 0.2;
+}

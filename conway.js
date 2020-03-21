@@ -14,13 +14,13 @@ const RecurringTimer = function(callback, delay) {
         remaining -= new Date() - start;
     };
 
-    var resume = function() {
+    var resume = function(ms) {
         start = new Date();
         timerId = window.setTimeout(function() {
             remaining = delay;
-            resume();
+            resume(ms);
             callback();
-        }, remaining);
+        }, ms);
     };
 
     this.resume = resume;
@@ -32,8 +32,16 @@ const RecurringTimer = function(callback, delay) {
 // ---
 
 class Game {
+	static INTERVAL_NORMAL = 50;
+	static INTERVAL_DEBUG = 500;
+
+	static MODE_APPLY = 0;
+	static MODE_TRANSITION = 1;
+	static MODE_SINGLE = -1;
+
 	constructor(width, height) {
 		this.startBtn = document.getElementById("start");
+		this.debugBtn = document.getElementById("debug");
 		grid.initializeGrid(width, height);
 		this.reset();
 	}
@@ -55,7 +63,7 @@ class Game {
 	start() {
 		this.timer = new RecurringTimer(() => {
 			this.tick();
-		}, 50);
+		}, this.interval);
 	}
 
 	stop() {
@@ -63,28 +71,31 @@ class Game {
 			this.timer.pause();
 		}
 		this.isResuming = false;
-		startBtn.innerText = 'start';
+		this.startBtn.innerText = 'start';
 	}
 
 	resume() {
-		if (this.timer) {
-			this.timer.resume();
-		}
+		this.timer.resume(this.interval);
 		this.isResuming = true;
-		startBtn.innerText = 'stop';
+		this.startBtn.innerText = 'stop';
 	}
 
 	tick() {
-		grid.tick();
-		this.generation++;
+		this.generation = grid.tick(this.generation, this.mode);
+		if (this.mode != Game.MODE_SINGLE) {
+			this.mode = this.mode == Game.MODE_APPLY ? Game.MODE_TRANSITION : Game.MODE_APPLY;
+		}
 		this.updateTitle();
 	}
 
 	reset() {
 		this.stop();
 		grid.clear();
+		this.interval = Game.INTERVAL_NORMAL;
+		this.mode = Game.MODE_SINGLE;
 		this.generation = 0;
-		this.showIntermediateState = false;		
+		this.showIntermediateState = false;
+		this.debugBtn.classList.remove('active');
 		this.updateTitle();
 		this.randomizeCellStates();
 	}
@@ -100,9 +111,24 @@ class Game {
 		this.showIntermediateState = !this.showIntermediateState;
 	}
 
-	step() {
+	toggleDebugMode(el) {
+		if (this.mode == Game.MODE_SINGLE) {
+			this.mode = Game.MODE_APPLY;
+			this.stop();
+			this.interval = Game.INTERVAL_DEBUG;
+			this.resume();
+		} else {
+			this.mode = Game.MODE_SINGLE;
+			this.stop();
+			this.interval = Game.INTERVAL_NORMAL;
+			this.resume();
+		}
+		el.classList.toggle('active');
+	}
+
+	step() {		
 		this.stop();
-		this.tick();
+		this.tick(Game.MODE_SINGLE);
 		this.showIntermediateState = false;
 	}
 
@@ -128,10 +154,24 @@ class Grid {
 		this.refresh();		
 	}
 
-	tick(showSteps) {
-		this.applyRules();
-		this.transition();
-		this.refresh();
+	tick(generation, mode) {
+		switch(mode) {
+			case Game.MODE_SINGLE:
+				this.applyRules();
+				this.transition();
+				this.refresh();
+				generation++;
+				break;
+			case Game.MODE_APPLY:
+				this.applyRules();	
+				break;
+			case Game.MODE_TRANSITION:
+				this.transition();
+				this.refresh();
+				generation++;
+				break;
+		}
+		return generation;
 	}
 
 	applyRules() {
